@@ -168,9 +168,9 @@ if "turn_count" not in st.session_state: st.session_state["turn_count"] = 0
 
 with st.sidebar:
     st.header("🗝 API Key 입력")
-    openai_key = st.text_input("OpenAI Key (Left)", type="password")
-    anthropic_key = st.text_input("Anthropic Key (Right)", type="password")
-    google_key = st.text_input("Google Key (Judge)", type="password")
+    openai_key = st.text_input("OpenAI Key (Left)", value=st.secrets.get("OPENAI_API_KEY", ""), type="password")
+    anthropic_key = st.text_input("Anthropic Key (Right)", value=st.secrets.get("ANTHROPIC_API_KEY", ""), type="password")
+    google_key = st.text_input("Google Key (Judge)", value=st.secrets.get("GOOGLE_API_KEY", ""), type="password")
     
     st.divider()
     st.markdown("### 📊 데스매치 현황")
