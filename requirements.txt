@@ -1,0 +1,6 @@
+streamlit
+openai
+anthropic
+google-generativeai
+duckduckgo-search
+pypdf
