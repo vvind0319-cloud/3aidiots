@@ -276,6 +276,35 @@ def get_system_prompt(role, context_history="", turn_count=0, search_evidence=No
         """
     return ""
 
+def build_api_messages(target_role, history):
+    formatted_msgs = []
+    
+    for i, msg in enumerate(history):
+        role = msg["role"]
+        content = msg["content"]
+        content = clean_response(content, role)
+        
+        if role == "chief": continue 
+
+        if role == target_role:
+            formatted_msgs.append({"role": "assistant", "content": content})
+        elif role == "user":
+             formatted_msgs.append({"role": "user", "content": f"### [CLIENT'S REQUEST]:\n{content}"})
+        else:
+            rival_name = "ChatGPT" if role == "left" else "Claude"
+            is_last = (i == len(history) - 1)
+            prefix = f"### [RIVAL AGENT - {rival_name}]:\n"
+            suffix = ""
+            
+            if is_last:
+                suffix = "\n\n" + "-"*30 + "\n"
+                suffix += f"[SYSTEM COMMAND]: 위 메시지는 경쟁자({rival_name})의 주장입니다.\n"
+                suffix += "무자비하게 반박하세요."
+
+            formatted_msgs.append({"role": "user", "content": prefix + content + suffix})
+    
+    return formatted_msgs
+
 # --------------------------------------------------------------------------
 # 3. 메인 로직
 # --------------------------------------------------------------------------
