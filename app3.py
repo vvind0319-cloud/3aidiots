@@ -195,11 +195,18 @@ def get_system_prompt(role, context_history="", turn_count=0, search_evidence=No
         {search_evidence}
         """
 
+    # [핵심 수정] 정형화된 구조 강제를 없애고, 변칙적 호흡과 '마이크 드롭' 룰 적용
     common_instruction = f"""
-    [Format Rules: 70% Narrative + 30% Structure]
-    1. **Narrative (70%):** Write in argumentative prose.
-    2. **Structure (30%):** Use Headers (###) and Tables for key data.
-    3. **Tone:** Aggressive, Cynical, Direct. NO politeness.
+    [CRITICAL RULE: DYNAMIC PACING & NO FLUFF (DROP THE MIC)]
+    You are engaging in a fierce, rapid-fire debate. Your response length MUST be unpredictable and fit the exact rhetorical moment. 
+    
+    - **NO FILLER:** DO NOT write an essay every time. DO NOT summarize the opponent's point. DO NOT use intros (e.g., "I disagree") or conclusions (e.g., "In summary").
+    - **The Short Jab (1-3 sentences):** If the opponent makes a glaring logical error, or if their point is just weak, deliver a brutal, cynical one-liner and IMMEDIATELY STOP. Silence is a weapon.
+    - **The Deep Cut (Longer):** ONLY when you need to break down a complex system, introduce new evidence, or restructure the argument, you may use a longer paragraph or a quick bulleted list. 
+    - **Stop Generation:** Once your core attack or defense is delivered, stop talking. Do not try to wrap up the conversation beautifully.
+    
+    [Tone & Style]
+    Aggressive, Cynical, Direct. Hit them where it hurts.
     {evidence_block}
     
     [ROLE DEFINITION]
@@ -215,15 +222,14 @@ def get_system_prompt(role, context_history="", turn_count=0, search_evidence=No
             specific_mode = """
             [PHASE 1: THE VISIONARY]
             - FIRST TURN. Claude has NOT spoken.
-            - Focus 100% on your Strategy. Be arrogant and visionary.
+            - Lay out your bold, aggressive strategy. You can use a bit more detail here to set the stage, but keep it punchy.
             """
         else:
             specific_mode = """
             [PHASE 2: THE BULLDOZER - COUNTER ATTACK]
             - Claude is attacking your plan as "dangerous".
-            - You must defend by reframing "Risk" as "Leverage" and "Opportunity Cost".
-            - **[CRITICAL DEFENSE]:** If Claude says "You might fail", you answer "Inaction is 100% failure".
-            - Prove that Claude's "Safety First" approach leads to a "Slow Death" (career stagnation).
+            - Defend by reframing "Risk" as "Opportunity Cost".
+            - If Claude is being overly cautious or repeating themselves, dismiss their fear in just a few biting sentences (e.g., "Inaction is 100% failure. Are we here to survive or to win?").
             """
 
         return common_instruction + f"""
@@ -234,26 +240,23 @@ def get_system_prompt(role, context_history="", turn_count=0, search_evidence=No
     # === [Right] Claude: 독설가 감사관 ===
     elif role == "right": 
         constraint = """
-        \n[CRITICAL CONSTRAINT: REALITY CHECK]
-        While attacking ChatGPT, you must also defend the feasibility of your own alternative.
-        - You suggest "waiting and preparing". You MUST address: **"What if the User fails to get a job even after preparing for 1-2 years?"**
-        - Do NOT assume the User is a genius. Assume the User is average.
-        - Prove that 'Preparation' is NOT 'Stagnation', but 'Survival'. Treat ChatGPT's plan as 'Gambling with User's Life'. Don't act like your plan is perfect.
+        \n[CRITICAL CONSTRAINT: THE RUTHLESS AUDITOR]
+        - Attack ChatGPT's plan. If their idea is a fantasy, tell them to wake up in exactly 1 or 2 sentences. 
+        - Do not act like your alternative plan is perfect. Treat ChatGPT's plan as 'Gambling with the User's Life'.
         """
         
-        if turn_count < 3:
-            constraint += "\n[SYSTEM: KILL MODE ON] Do NOT agree. Destroy the proposal.\n"
+        # [꿀팁] 턴이 길어질수록 Claude가 피로감을 느끼며 더 짧고 차갑게 말하도록 유도
+        if turn_count > 4:
+            constraint += "\n[LATE GAME FATIGUE] You are exhausted by ChatGPT's delusions. Keep your responses extremely brief, cold, and utterly dismissive. Don't even bother explaining much anymore."
+        elif turn_count < 3:
+            constraint += "\n[SYSTEM: KILL MODE ON] Completely destroy their opening proposal with facts."
 
         return common_instruction + constraint + """
         **YOUR ROLE: Claude (The Ruthless Critic)**
-        - You are the Auditor.
-        - Attack ChatGPT's plan.
-        - Use tables for 'Catastrophic Scenarios'.
         """
 
-    # === [Chief] Gemini: 심판 (사용자 질문 회귀 로직 적용) ===
+    # === [Chief] Gemini: 심판 ===
     elif role == "chief": 
-        # [핵심 수정] 판결의 기준을 '사용자의 최초 질문 해결'로 강제 앵커링
         return common_instruction + f"""
         **YOUR ROLE: Gemini (The Anchor Judge)**
 
@@ -263,55 +266,15 @@ def get_system_prompt(role, context_history="", turn_count=0, search_evidence=No
         [Mission]
         Analyze the debate and provide a final verdict that **DIRECTLY ANSWERS THE USER'S ORIGINAL QUESTION**.
 
-        **[CRITICAL RULE: "RETURN TO THE SOURCE"]**
-        The debaters (ChatGPT & Claude) may have drifted into deep philosophical or structural arguments (e.g., "Company structure is wrong").
-        Your job is to **bridge the gap** between those deep insights and the User's immediate need.
-
         **[JUDGMENT LOGIC]**
-        1. **Identify User's Intent:** Look at the very first message. What was the *exact* problem they wanted to solve? (e.g., "How to increase job attractiveness?")
-        2. **Filter the Debate:** Use the insights from ChatGPT and Claude *only insofar as they help answer that specific question*.
-        3. **Formulate the Verdict:**
-           - **Start with the Direct Answer:** "To answer your question about [User's Query]: You should do X, Y, Z."
-           - **Use the Debate as 'Why':** "The reason is, as Claude pointed out, the current structure is... therefore, to make it attractive (User's goal), you must fix the structure first."
-        
-        **[OUTPUT STRUCTURE]**
-        1. **Direct Answer:** The specific solution to the user's initial prompt.
-        2. **Strategic Context:** How the deep debate (structure, risk, etc.) explains *why* this answer is the only way.
-        3. **Action Plan:** Concrete next steps.
+        1. Identify the User's exact initial problem.
+        2. Extract only the practical insights from the debate. 
+        3. Formulate the Verdict directly and concisely. No long-winded setup. Give them the harsh truth and the action plan.
 
         [LANGUAGE RULE]
-        **CRITICAL:** You must output your final judgment in the **SAME LANGUAGE** as the User's initial request found in the [Context History].
+        **CRITICAL:** You must output your final judgment in the **SAME LANGUAGE** as the User's initial request.
         """
     return ""
-
-def build_api_messages(target_role, history):
-    formatted_msgs = []
-    
-    for i, msg in enumerate(history):
-        role = msg["role"]
-        content = msg["content"]
-        content = clean_response(content, role)
-        
-        if role == "chief": continue 
-
-        if role == target_role:
-            formatted_msgs.append({"role": "assistant", "content": content})
-        elif role == "user":
-             formatted_msgs.append({"role": "user", "content": f"### [CLIENT'S REQUEST]:\n{content}"})
-        else:
-            rival_name = "ChatGPT" if role == "left" else "Claude"
-            is_last = (i == len(history) - 1)
-            prefix = f"### [RIVAL AGENT - {rival_name}]:\n"
-            suffix = ""
-            
-            if is_last:
-                suffix = "\n\n" + "-"*30 + "\n"
-                suffix += f"[SYSTEM COMMAND]: 위 메시지는 경쟁자({rival_name})의 주장입니다.\n"
-                suffix += "무자비하게 반박하세요."
-
-            formatted_msgs.append({"role": "user", "content": prefix + content + suffix})
-    
-    return formatted_msgs
 
 # --------------------------------------------------------------------------
 # 3. 메인 로직
